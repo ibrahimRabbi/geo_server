@@ -48,7 +48,7 @@ const rideRequestSchema = new Schema<TrideRequest>(
         fare: {type: Number,default : 0,},
         note: {type: String,default: '',},
     },
-    { timestamps: true }
+    { timestamps: true, strict:'throw' }
 );
 
 export const RideRequestModel = model<TrideRequest>('rideRequests', rideRequestSchema);
