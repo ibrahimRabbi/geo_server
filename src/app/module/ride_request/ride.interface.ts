@@ -10,8 +10,7 @@ export type TrideRequest = {
     userId: Types.ObjectId;
     pickup: TgeoLocation;
     dropOff: TgeoLocation;
-    totalDistance: number,
-    duration: {};
+    totalDistanceKm: number,
     vehicel: Types.ObjectId | null,
     fare: number,
     paymentType: 'credit' | 'COD'

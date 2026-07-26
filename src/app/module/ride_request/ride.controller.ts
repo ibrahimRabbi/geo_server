@@ -4,9 +4,8 @@ import { RideRequestModel } from "./ride.model";
 import { catchAsync } from "../../helper/catchAsync";
 import status from "http-status";
 import { vehicleModel } from "../vichel/vichel.model";
-import { getRoadDistanceKm } from "../../helper/getRoadDistance";
 import { calculateDistanceInKm } from "../../helper/calculateDistance";
-import { calculateAllVehicleDurations } from "../../helper/calculateVehicleDuration";
+ 
 
 export const rideRequestController: RequestHandler = catchAsync(async (req, res) => {
 
@@ -16,14 +15,13 @@ export const rideRequestController: RequestHandler = catchAsync(async (req, res)
         req.body?.dropOff.latitude,
         req.body?.dropOff.langitude
     );
-    const durationForEachVehicles = calculateAllVehicleDurations(totalDistance)
+
     const rideRequestData: Partial<TrideRequest> = {
         userId: req.user?._id,
         pickup: req.body.pickup,
         dropOff: req.body.dropOff,
         fare: 0,
-        totalDistance: totalDistance,
-        duration : durationForEachVehicles,
+        totalDistanceKm: totalDistance,
         vehicel: null,
     }
 
@@ -42,12 +40,39 @@ export const rideRequestController: RequestHandler = catchAsync(async (req, res)
     })
 })
 
-
 export const getRequestWithVehicles: RequestHandler = catchAsync(async (req, res) => {
     
-    // const findMyRequest = await RideRequestModel.findOne({ userId: req.user?._id })
-    const findMyRequest = await RideRequestModel.findById('6a646c229f6c2d9e9d4c1a9d')
+    const findMyRequest = await RideRequestModel.findOne({ userId: req.user?._id })
+    if (!findMyRequest) {
+        throw new Error('faild to retrive your request')
+    }
+ 
+    const getAllvechicles = await vehicleModel.find({}).lean()
 
-    const getAllvechicles = await vehicleModel.find({})
+    const finalVehicleList = getAllvechicles.map((vehicle: any) => {
+
+        //duration calculation
+        const bufferMinute = 2
+        const calculateDuration = (findMyRequest?.totalDistanceKm / vehicle?.avrSpeedPerKm) * 60;
+        const final_duration = Math.ceil(calculateDuration) + bufferMinute;
+
+        //fare calculation
+        const estimatedFare = vehicle.baseFare + (findMyRequest?.totalDistanceKm * vehicle.perKmRate) + (final_duration * vehicle.perMinRate)
+
+        return {...vehicle, fare:estimatedFare, duration:final_duration}
+    })
+
+    res.status(status.OK).json({
+        status: status.OK,
+        success: true,
+        message: 'vehicle and ride reqest data retrived successfully',
+        data: {
+            vehicles: finalVehicleList,
+            rideRequest : findMyRequest
+        }
+    })
+
+    
+
     
 })

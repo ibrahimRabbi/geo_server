@@ -27,8 +27,7 @@ const rideRequestSchema = new Schema<TrideRequest>(
         userId: {type: Schema.Types.ObjectId,ref: 'riders',required: true,},
         pickup: {type: geoLocationSchema,required: true,},
         dropOff: {type: geoLocationSchema,required: true,},
-        totalDistance: {type: Number,default : 0,},
-        duration : {type:Object, default:0},
+        totalDistanceKm: {type: Number,default : 0,},
         vehicel: {type: Schema.Types.ObjectId,ref: 'vehicles',default: null,},
         paymentType: {
             type: String,

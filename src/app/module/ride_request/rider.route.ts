@@ -6,4 +6,4 @@ export const rideReqestRoute = Router()
 
 rideReqestRoute.post('/create-request', authentication, rideRequestController)
 
-rideReqestRoute.get('/get-my-request', getRequestWithVehicles)
+rideReqestRoute.get('/get-my-request', authentication, getRequestWithVehicles)
