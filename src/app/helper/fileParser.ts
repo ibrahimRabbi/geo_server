@@ -3,7 +3,7 @@ import multer from "multer"
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, process.cwd() + '/src/uploads')
+    cb(null, process.cwd() + '/src/app/upload')
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
@@ -12,4 +12,4 @@ const storage = multer.diskStorage({
    
 })
 
-export const placeFile = multer({limits: { fileSize: 50 * 1024 * 1024 }, storage: storage})
+export const placeFile = multer({limits: { fileSize: 10 * 1024 * 1024 }, storage: storage})

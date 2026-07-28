@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import  envData  from "../config";
 import riderModel from "../module/rider/ride.model";
+import { drivermodel } from "../module/driver/driver.model";
  
  
 
@@ -47,17 +48,18 @@ export const authentication = async (req: Request, res: Response, next: NextFunc
             next()
         }
 
-        //for driver phase
-        // const findUser = await driverModel.findOne({
-        //     _id: (decodeUser as JwtPayload).userId,
-        //     isDeleted: { $ne: true }
-        // });
+        if (decodeUser?.role === 'driver') {
+            const findUser = await drivermodel.findOne({
+                _id: (decodeUser as JwtPayload).userId,
+                isDeleted: { $ne: true }
+            });
 
-        // if (!findUser) {
-        //     throw new Error('unauthorized river')
-        // }
-        // req.user = findUser
-        // next()
+            if (!findUser) {
+                throw new Error('unauthorized user')
+            }
+            req.user = findUser
+            next()
+        }
 
     } catch (err: any) {
         next(err);
