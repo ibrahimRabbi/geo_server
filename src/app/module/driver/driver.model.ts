@@ -139,9 +139,6 @@ const DriverSchema = new Schema<IDriverOnboardingDocument>({
 const tempDriverSchema = new Schema<IDriverOnboardingDocument>({
     email: {
         type: String,
-        unique: [true, 'this user already exists'],
-        sparse: true,
-        lowercase: true,
         trim: true,
         validate: [
             {
@@ -155,8 +152,6 @@ const tempDriverSchema = new Schema<IDriverOnboardingDocument>({
 
     phoneNumber: {
         type: String,
-        unique: [true, 'this user already exists'],
-        sparse: true,
         validate: [
             {
                 validator: function (v: string) {
@@ -169,9 +164,6 @@ const tempDriverSchema = new Schema<IDriverOnboardingDocument>({
 })
 
 
-// DriverOnboardingSchema.pre(/^find/, function (next) {
-//     this.find({ isDeleted: { $ne: true } });
-//     next();
-// });
+ 
 export const tempDrivermodel = model<IDriverOnboardingDocument>('tempDrivers', tempDriverSchema);
 export const drivermodel = model<IDriverOnboardingDocument>('drivers', DriverSchema);

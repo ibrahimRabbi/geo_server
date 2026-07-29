@@ -5,6 +5,7 @@ import status from "http-status";
 import { drivermodel, tempDrivermodel } from "./driver.model";
 import envData from "../../config";
 import jwt from 'jsonwebtoken'
+import mongoose from 'mongoose';
 
 export const singleImageUploadController: RequestHandler = catchAsync(async (req, res, next) => {
 
@@ -58,29 +59,51 @@ export const tempDriverController: RequestHandler = catchAsync(async (req, res, 
 
 
 export const createDriverController: RequestHandler = catchAsync(async (req, res, next) => {
+    const session = await mongoose.startSession();
 
-    const createDriver = await drivermodel.create(req.body)
-    if (!createDriver) {
-        throw new Error('faild to create driver account')
+    try {
+        session.startTransaction();
+
+        const payload = { ...req.body }
+        delete payload.tempUserId
+        
+        const createDriver = await drivermodel.create([payload], { session });
+
+        if (!createDriver || !createDriver[0]) {
+            throw new Error('faild to create driver account');
+        }
+
+        const driver = createDriver[0];
+
+        const deletingTempDriver = await tempDrivermodel.findByIdAndDelete(
+            req.body?.tempUserId,
+            { session }
+        );
+
+        const credentials = {
+            fullName: driver?.fullName,
+            identifier: driver.email ? driver.email : driver.phoneNumber,
+            role: driver.role,
+            userId: driver._id,
+        };
+
+        const accessToken = jwt.sign(credentials, envData.secretKey as string, { expiresIn: '12d' });
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.status(status.OK).json({
+            success: true,
+            status: status.OK,
+            message: 'driver account created successfully',
+            token: accessToken
+        });
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        throw error;
     }
-
-    const credentials = {
-        fullName: createDriver?.fullName,
-        identifier: createDriver.email ? createDriver.email : createDriver.phoneNumber,
-        role: createDriver.role,
-        userId: createDriver._id,
-    };
-
-    const accessToken = jwt.sign(credentials, envData.secretKey as string, { expiresIn: '12d' });
-
-    res.status(status.OK).json({
-        success: true,
-        status: status.OK,
-        message: 'driver account created successfully',
-        token: accessToken
-    })
-
-})
+});
 
 
 export const driverSignInController: RequestHandler = catchAsync(async (req, res) => {
@@ -91,7 +114,7 @@ export const driverSignInController: RequestHandler = catchAsync(async (req, res
     });
 
     if (!signIn) {
-        throw new Error('faild to sign in')
+        throw new Error('this user is not exist. please input a valid credential or register new one')
     }
 
 
