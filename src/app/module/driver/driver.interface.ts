@@ -22,6 +22,11 @@ export interface TDriverDocuments {
     selfieUrl: string;
 }
 
+export type TcurrentLocation = {
+    type: 'Point',
+    coordinates : number[]
+}
+
 export interface TDriverOnboarding {
     fullName: string;
     nidNumber: string;
@@ -30,6 +35,7 @@ export interface TDriverOnboarding {
     email: string;
     phoneNumber: string;
     role: 'driver';
+    currentLocation : TcurrentLocation
     vehicleInfo: TVehicleInfo;
     documents: TDriverDocuments;
     status: VerificationStatus;

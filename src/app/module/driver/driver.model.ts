@@ -1,5 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
-import { TDriverOnboarding, TVehicleInfo, TDriverDocuments, VehicleType, VerificationStatus } from './driver.interface';
+import { TDriverOnboarding, TVehicleInfo, TDriverDocuments, VehicleType, VerificationStatus, TcurrentLocation } from './driver.interface';
 import validator from 'validator'
 
 
@@ -62,7 +62,10 @@ const DriverDocumentsSchema = new Schema<TDriverDocuments>({
     },
 }, { _id: false });
 
-
+const currentLocationSchema = new Schema<TcurrentLocation>({
+    type: { type: String, default: 'Point' },
+    coordinates: { type: [Number],required: true, default: [0, 0]},
+}, { _id: false })
 
 const DriverSchema = new Schema<IDriverOnboardingDocument>({
     fullName: {
@@ -116,19 +119,20 @@ const DriverSchema = new Schema<IDriverOnboardingDocument>({
             }
         ]
     },
-    role : {type:String,default:'driver'},
+    role: { type: String, default: 'driver' },
+    currentLocation: { type: currentLocationSchema, default: () => ({}), },
     vehicleInfo: {
         type: VehicleInfoSchema,
         required: [true, 'Vehicle info is required'],
     },
-    documents: {type: DriverDocumentsSchema,required: [true, 'Driver documents are required'],},
+    documents: { type: DriverDocumentsSchema, required: [true, 'Driver documents are required'], },
     status: {
         type: String,
         enum: ['pending', 'approved', 'rejected'] as VerificationStatus[],
         default: 'pending',
     },
-    rejectionReason: {type: String, default: ''},
-    isDeleted: {type: Boolean,index: true,default: false,},
+    rejectionReason: { type: String, default: '' },
+    isDeleted: { type: Boolean, index: true, default: false, },
 },
     {
         timestamps: true,
@@ -160,10 +164,10 @@ const tempDriverSchema = new Schema<IDriverOnboardingDocument>({
                 message: 'Phone number must be 11-14 digits and can start with +',
             }
         ]
-    }, 
+    },
 })
 
 
- 
+
 export const tempDrivermodel = model<IDriverOnboardingDocument>('tempDrivers', tempDriverSchema);
 export const drivermodel = model<IDriverOnboardingDocument>('drivers', DriverSchema);

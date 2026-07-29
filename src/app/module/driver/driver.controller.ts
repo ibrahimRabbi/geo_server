@@ -66,7 +66,7 @@ export const createDriverController: RequestHandler = catchAsync(async (req, res
 
         const payload = { ...req.body }
         delete payload.tempUserId
-        
+
         const createDriver = await drivermodel.create([payload], { session });
 
         if (!createDriver || !createDriver[0]) {
@@ -145,5 +145,26 @@ export const getDriverProfileController: RequestHandler = catchAsync(async (req,
         status: status.OK,
         message: 'profile data retrived successfully',
         data: req.user
+    });
+});
+
+
+export const updateDriverLocationController: RequestHandler = catchAsync(async (req, res) => {
+
+    const updating = await drivermodel.findByIdAndUpdate(
+        req.user?._id,
+        { 'currentLocation.coordinates': req.body.coordinates, 'currentLocation.type': 'Point' },
+        { new: true, runValidators: true, context: 'query' }
+    );
+
+    if (!updating) {
+        throw new Error('faild to update location')
+    }
+
+    return res.status(status.OK).json({
+        success: true,
+        status: status.OK,
+        message: 'location updated successfully',
+        data: updating
     });
 });
