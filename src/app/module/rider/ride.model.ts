@@ -46,7 +46,7 @@ const riderSchema = new Schema<Trider>({
 
     profileImage: {
         type: String,
-        default: 'https://res.cloudinary.com/dymnrefpr/image/upload/v1757822614/qzvkz2mczodyvwasqtlk.jpg',
+        default: 'https://res.cloudinary.com/dymnrefpr/image/upload/v1780901956/vkp6r6chcjqncbzkcieh.jpg',
     },
     role : {
         type: String,

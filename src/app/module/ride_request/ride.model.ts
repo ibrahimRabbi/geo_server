@@ -24,11 +24,20 @@ const geoLocationSchema = new Schema<TgeoLocation>(
 
 const rideRequestSchema = new Schema<TrideRequest>(
     {
-        userId: {type: Schema.Types.ObjectId,ref: 'riders',required: true,},
+        userId: { type: Schema.Types.ObjectId, ref: 'riders', required: true },
+        driverId: { type: Schema.Types.ObjectId, ref: 'drivers', default: null },
         pickup: {type: geoLocationSchema,required: true,},
         dropOff: {type: geoLocationSchema,required: true,},
         totalDistanceKm: {type: Number,default : 0,},
-        vehicel: {type: Schema.Types.ObjectId,ref: 'vehicles',default: null,},
+        vehicle: { type: Schema.Types.ObjectId, ref: 'vehicles', default: null },
+        status: {
+            type: String,
+            enum: {
+                values: ['pending', 'accepted','picked', 'no_driver_found', 'on-trip', 'cancelled', 'completed'],
+                message: '{VALUE} is invalid ride request status'
+            },
+            default: 'pending'
+        },
         paymentType: {
             type: String,
             enum: {

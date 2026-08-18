@@ -8,13 +8,15 @@ export type TgeoLocation = {
 }
 export type TrideRequest = {
     userId: Types.ObjectId;
+    driverId?: Types.ObjectId;
     pickup: TgeoLocation;
     dropOff: TgeoLocation;
     totalDistanceKm: number,
-    vehicel: Types.ObjectId | null,
+    vehicle: Types.ObjectId | null,
     fare: number,
     paymentType: 'credit' | 'COD'
-    paymentStatus : 'paid' | 'unpaid'
+    paymentStatus: 'paid' | 'unpaid'
+    status: 'pending' | 'accepted' | 'picked' | 'no_driver_found' | 'on-trip' | 'cancelled' | 'completed';
     note: string,
     
 }

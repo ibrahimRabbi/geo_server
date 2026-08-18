@@ -40,6 +40,7 @@ export interface TDriverOnboarding {
     documents: TDriverDocuments;
     status: VerificationStatus;
     rejectionReason?: string;
+    isActive: boolean;
     isDeleted: boolean;
 }
 

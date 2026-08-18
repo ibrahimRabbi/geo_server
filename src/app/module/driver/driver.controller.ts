@@ -168,3 +168,23 @@ export const updateDriverLocationController: RequestHandler = catchAsync(async (
         data: updating
     });
 });
+
+export const updateDriverController: RequestHandler = catchAsync(async (req, res) => {
+
+    const updating = await drivermodel.findByIdAndUpdate(
+        req.user?._id,
+        req.body,
+        { new: true, runValidators: true, context: 'query' }
+    );
+
+    if (!updating) {
+        throw new Error('faild to update feild')
+    }
+
+    return res.status(status.OK).json({
+        success: true,
+        status: status.OK,
+        message: 'driver updated successfully',
+        data: updating
+    });
+})

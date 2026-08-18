@@ -5,9 +5,14 @@ import mongoose from 'mongoose'
 import { router } from './app/router'
 import { globalErrorHandler } from './app/middleware/globalError'
 import { notFound } from './app/middleware/notFound'
+import http from 'http'
+import { initializeSocket } from './app/socket'
+ 
 
 
 const app = express()
+const server = http.createServer(app)
+initializeSocket(server)
 
 app.use(cors(
   {
@@ -17,10 +22,11 @@ app.use(cors(
     allowedHeaders: ['Content-Type', 'Authorization'],
   }
 ))
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use('/api/v1', router)
- 
+
 app.use(notFound)
 app.use(globalErrorHandler)
 
@@ -28,10 +34,8 @@ app.use(globalErrorHandler)
 
 async function main() {
   await mongoose.connect(envData.databaseUrl);
-  console.log('✅ Database connected successfully');
 
-
-  app.listen(envData.port, () => {
+  server.listen(envData.port, () => {
     console.log(`Server is running on port ${envData.port}`)
   })
 

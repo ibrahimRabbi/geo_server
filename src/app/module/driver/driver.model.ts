@@ -64,7 +64,7 @@ const DriverDocumentsSchema = new Schema<TDriverDocuments>({
 
 const currentLocationSchema = new Schema<TcurrentLocation>({
     type: { type: String, default: 'Point' },
-    coordinates: { type: [Number],required: true, default: [0, 0]},
+    coordinates: { type: [Number], required: true, default: [0, 0] },
 }, { _id: false })
 
 const DriverSchema = new Schema<IDriverOnboardingDocument>({
@@ -76,7 +76,6 @@ const DriverSchema = new Schema<IDriverOnboardingDocument>({
     nidNumber: {
         type: String,
         required: [true, 'NID number is required'],
-        index: true,
         unique: true,
         trim: true,
     },
@@ -120,7 +119,7 @@ const DriverSchema = new Schema<IDriverOnboardingDocument>({
         ]
     },
     role: { type: String, default: 'driver' },
-    currentLocation: { type: currentLocationSchema, default: () => ({}), },
+    currentLocation: { type: currentLocationSchema, '2dsphere': true, default: () => ({}), },
     vehicleInfo: {
         type: VehicleInfoSchema,
         required: [true, 'Vehicle info is required'],
@@ -132,12 +131,10 @@ const DriverSchema = new Schema<IDriverOnboardingDocument>({
         default: 'pending',
     },
     rejectionReason: { type: String, default: '' },
+    isActive: { type: Boolean, default: false, index: true },
     isDeleted: { type: Boolean, index: true, default: false, },
 },
-    {
-        timestamps: true,
-        strict: 'throw'
-    }
+    {timestamps: true,strict: 'throw'}
 );
 
 const tempDriverSchema = new Schema<IDriverOnboardingDocument>({
