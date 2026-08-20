@@ -7,9 +7,11 @@ import { vehicleModel } from "../vichel/vichel.model";
 import { calculateDistanceInKm } from "../../helper/calculateDistance";
 import { drivermodel } from "../driver/driver.model";
 import { getIO, registerPendingOffer, resolvePendingOffer } from "../../socket";
- 
- 
- 
+import riderModel from "../rider/ride.model";
+import mongoose from "mongoose";
+
+
+
 
 
 export const rideRequestController: RequestHandler = catchAsync(async (req, res) => {
@@ -115,7 +117,7 @@ export const findNearbyDriversController: RequestHandler = catchAsync(async (req
         .populate('vehicle', 'model plateNumber')
         .populate('userId')
         .lean()
-    
+
 
     if (!myRideRequest) {
         throw new Error('failed to retrieve your request')
@@ -135,9 +137,9 @@ export const findNearbyDriversController: RequestHandler = catchAsync(async (req
             },
         },
     }).lean();
-    
 
-     
+
+
     if (!nearbyDrivers.length) {
         return res.status(status.OK).json({
             status: status.OK,
@@ -149,7 +151,7 @@ export const findNearbyDriversController: RequestHandler = catchAsync(async (req
 
     const offerRide = {
         rideRequestId: myRideRequest._id.toString(),
-        rider : myRideRequest.userId,
+        rider: myRideRequest.userId,
         pickup: myRideRequest.pickup?.address,
         dropOff: myRideRequest.dropOff?.address,
         fare: myRideRequest.fare,
@@ -214,7 +216,7 @@ export const findNearbyDriversController: RequestHandler = catchAsync(async (req
         status: status.OK,
         success: true,
         message: 'driver found and assigned successfully',
-        data:  updatedRideRequest,
+        data: updatedRideRequest,
     });
 
 })
@@ -226,7 +228,7 @@ export const getRideRequestController: RequestHandler = catchAsync(async (req, r
     if (!findRideRequest) {
         throw new Error('faild to get rideRequest')
     }
-     
+
     res.status(status.OK).json({
         status: status.OK,
         success: true,
@@ -242,7 +244,7 @@ export const updateRideRequestController: RequestHandler = catchAsync(async (req
     if (!updateRideRequest) {
         throw new Error('faild to update rideRequest')
     }
-    
+
     res.status(status.OK).json({
         status: status.OK,
         success: true,
@@ -252,8 +254,53 @@ export const updateRideRequestController: RequestHandler = catchAsync(async (req
 
 })
 
- 
 
-    
-    
- 
+export const walletPaymentController: RequestHandler = catchAsync(async (req, res) => {
+    const session = await mongoose.startSession();
+
+    try {
+        session.startTransaction();
+
+        const riderData = await riderModel.findById(req.body.riderId).session(session);
+        if (!riderData) {
+            throw new Error('failed to retrieve rider data');
+        }
+
+        const updatedRider = await riderModel.findByIdAndUpdate(
+            req.body.riderId,
+            { $inc: { creditBlance: -req.body.rideFare } },
+            { new: true, runValidators: true, context: 'query', strict: true, session }
+        );
+        if (!updatedRider) {
+            throw new Error('failed to update rider wallet balance');
+        }
+
+        const updateRideRequest = await RideRequestModel.findByIdAndUpdate(
+            req.body.rideReqId,
+            { paymentStatus: 'paid' },
+            { new: true, runValidators: true, context: 'query', strict: true, session }
+        );
+        if (!updateRideRequest) {
+            throw new Error('failed to update rideRequest');
+        }
+
+        await session.commitTransaction();
+
+        res.status(status.OK).json({
+            status: status.OK,
+            success: true,
+            message: 'ride request data updated successfully',
+            data: updateRideRequest,
+        });
+    } catch (err) {
+        await session.abortTransaction();
+        throw err;
+    } finally {
+        session.endSession();
+    }
+});
+
+
+
+
+

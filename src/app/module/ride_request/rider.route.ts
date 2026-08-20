@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authentication } from "../../middleware/authentication";
-import { findNearbyDriversController, getRequestWithVehicles, getRideRequestController, rideRequestController, selectVehicleController, updateRideRequestController } from "./ride.controller";
+import { findNearbyDriversController, getRequestWithVehicles, getRideRequestController, rideRequestController, selectVehicleController, updateRideRequestController, walletPaymentController } from "./ride.controller";
 
 export const rideRequestRoute = Router()
 
@@ -12,8 +12,8 @@ rideRequestRoute.patch('/select-vehicle', authentication, selectVehicleControlle
 
 rideRequestRoute.get('/find-nearby-drivers/:rideReqId', authentication, findNearbyDriversController)
 
-rideRequestRoute.get('/get-request/:rideReqId', getRideRequestController)
+rideRequestRoute.get('/get-request/:rideReqId', authentication, getRideRequestController)
 
-rideRequestRoute.patch('/update-request/:rideReqId', updateRideRequestController)
+rideRequestRoute.patch('/update-request/:rideReqId', authentication, updateRideRequestController)
 
- 
+rideRequestRoute.patch('/update-wallet', authentication, walletPaymentController)

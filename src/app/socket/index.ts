@@ -62,6 +62,14 @@ export const initializeSocket = (server: HTTPServer): Server => {
              io.to(data.driverId).emit('acceptPickedUpStatus', { status:data.status });
         });
 
+        socket.on('rideComplete', (data: { driverId: string, status: string }) => {
+            io.to(data.driverId).emit('completeStatus', { status: data.status });
+        });
+
+        socket.on('payment', (data: { driverId: string, paymentStatus: string }) => {
+            io.to(data.driverId).emit('paymentPaid', { paymentStatus: data.paymentStatus });
+        });
+
         socket.on('disconnect', () => {
             console.log('A user disconnected:', socket.id, 'User ID:', userId);
         });
