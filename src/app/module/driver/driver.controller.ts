@@ -96,7 +96,7 @@ export const createDriverController: RequestHandler = catchAsync(async (req, res
             success: true,
             status: status.OK,
             message: 'driver account created successfully',
-            token: accessToken
+            driverToken: accessToken
         });
     } catch (error) {
         await session.abortTransaction();
@@ -132,7 +132,7 @@ export const driverSignInController: RequestHandler = catchAsync(async (req, res
         status: status.OK,
         message: 'Sign in successfully',
         isExist: true,
-        token: accessToken,
+        driverToken: accessToken,
     });
 
 });
@@ -143,7 +143,7 @@ export const getDriverProfileController: RequestHandler = catchAsync(async (req,
     return res.status(status.OK).json({
         success: true,
         status: status.OK,
-        message: 'profile data retrived successfully',
+        message: 'driver profile data retrived successfully',
         data: req.user
     });
 });

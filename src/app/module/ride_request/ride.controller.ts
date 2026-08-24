@@ -84,7 +84,6 @@ export const getRequestWithVehicles: RequestHandler = catchAsync(async (req, res
 
 })
 
-
 export const selectVehicleController: RequestHandler = catchAsync(async (req, res) => {
 
     const updateFiled: Partial<TrideRequest> = {
@@ -107,7 +106,6 @@ export const selectVehicleController: RequestHandler = catchAsync(async (req, re
         data: updating
     })
 })
-
 
 export const findNearbyDriversController: RequestHandler = catchAsync(async (req, res) => {
 
@@ -221,7 +219,6 @@ export const findNearbyDriversController: RequestHandler = catchAsync(async (req
 
 })
 
-
 export const getRideRequestController: RequestHandler = catchAsync(async (req, res) => {
 
     const findRideRequest = await RideRequestModel.findById(req.params?.rideReqId).populate('vehicle').populate('userId').populate('driverId')
@@ -253,7 +250,6 @@ export const updateRideRequestController: RequestHandler = catchAsync(async (req
     });
 
 })
-
 
 export const walletPaymentController: RequestHandler = catchAsync(async (req, res) => {
     const session = await mongoose.startSession();

@@ -71,7 +71,7 @@ export const getRiderProfileController: RequestHandler = catchAsync(async (req, 
     return res.status(status.OK).json({
         success: true,
         status: status.OK,
-        message: 'profile data retrived successfully',
+        message: 'rider profile data retrived successfully',
        data :  req.user
     });
 });
