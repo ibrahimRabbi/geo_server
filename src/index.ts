@@ -16,7 +16,7 @@ initializeSocket(server)
 
 app.use(cors(
   {
-    origin: ['http://localhost:3000'],
+    origin: ['http://localhost:3000','https://geo-rider.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
