@@ -8,7 +8,8 @@ const envData = {
     databaseUrl: process.env.DATABASE_URL || '',
     mode: process.env.MODE || 'development',
     secretKey: process.env.SECRET_KEY || '',
-    googleMapApiKey: process.env.GOOGLE_MAPS_API_KEY
+    googleMapApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
+    duffle_accessToken: process.env.DUFFEL_ACCESS_TOKEN || '',
 }
 
 export default envData;
