@@ -1,14 +1,22 @@
- import { Duffel } from "@duffel/api";
+import { Duffel } from "@duffel/api";
 import envData from "../../config";
 import { catchAsync } from "../../helper/catchAsync";
 import { RequestHandler } from "express";
 import status from "http-status";
+import { createCheckoutSessionService } from "./flight.services";
+import Stripe from "stripe";
+import { flightBookingModel } from "../bookingFlight/booking.model";
 
- 
+
 
 const duffel = new Duffel({ token: envData.duffle_accessToken });
+const stripe = new Stripe(envData.stripe_secret_key as string);
 
- 
+const DEFAULT_FIELDS = ['id', 'price', 'airline', 'duration', 'stops', 'segments', 'passengers'];
+
+
+
+
 const FIELD_EXTRACTORS: Record<string, (offer: any) => any> = {
     id: (o) => o.id,
     price: (o) => ({ amount: o.total_amount, currency: o.total_currency }),
@@ -20,10 +28,8 @@ const FIELD_EXTRACTORS: Record<string, (offer: any) => any> = {
         iata_code: o.owner?.iata_code,
         logo: o.owner?.logo_symbol_url,
     }),
-    duration: (o) =>
-        o.slices?.map((s: any) => s.duration) ?? [],
-    stops: (o) =>
-        o.slices?.map((s: any) => Math.max((s.segments?.length ?? 1) - 1, 0)) ?? [],
+    duration: (o) => o.slices?.map((s: any) => s.duration) ?? [],
+    stops: (o) => o.slices?.map((s: any) => Math.max((s.segments?.length ?? 1) - 1, 0)) ?? [],
     segments: (o) =>
         o.slices?.map((s: any) =>
             s.segments?.map((seg: any) => ({
@@ -37,30 +43,21 @@ const FIELD_EXTRACTORS: Record<string, (offer: any) => any> = {
             }))
         ) ?? [],
     cabin_class: (o) => o.cabin_class ?? o.slices?.[0]?.segments?.[0]?.passengers?.[0]?.cabin_class,
-    baggage: (o) =>
-        o.slices?.[0]?.segments?.[0]?.passengers?.[0]?.baggages ?? [],
+    baggage: (o) => o.slices?.[0]?.segments?.[0]?.passengers?.[0]?.baggages ?? [],
     conditions: (o) => o.conditions,
+
+     
+    passengers: (o) =>
+        o.passengers?.map((p: any) => ({
+            id: p.id,
+            type: p.type, // "adult" | "child" | "infant_without_seat"
+            age: p.age,
+        })) ?? [],
 };
 
-const DEFAULT_FIELDS = ['id', 'price', 'airline', 'duration', 'stops', 'segments'];
-
-const parseFieldsParam = (fieldsParam?: string): string[] => {
-    if (!fieldsParam) return DEFAULT_FIELDS;
-
-    const tokens = fieldsParam
-        .split(/[\s,]+/)
-        .filter(Boolean);
-
-    const excluded = tokens.filter((t) => t.startsWith('-')).map((t) => t.slice(1));
-    const included = tokens.filter((t) => !t.startsWith('-'));
-
-    // যদি শুধু exclude ফিল্ড দেওয়া থাকে (যেমন "-conditions"), তাহলে default থেকে বাদ দিয়ে বাকিটা রাখি
-    if (included.length === 0 && excluded.length > 0) {
-        return DEFAULT_FIELDS.filter((f) => !excluded.includes(f));
-    }
-
-    // include দেওয়া থাকলে সেগুলোই ব্যবহার হবে, শুধু ভুল/অচেনা ফিল্ড নাম ফিল্টার আউট
-    return included.filter((f) => FIELD_EXTRACTORS[f]);
+const parseFieldsParam = (fieldsParam?: string[]): string[] => {
+    if (!fieldsParam || fieldsParam.length === 0) return DEFAULT_FIELDS;
+    return fieldsParam.filter((f) => FIELD_EXTRACTORS[f]);
 };
 
 const selectOfferFields = (offer: any, fields: string[]) => {
@@ -73,20 +70,20 @@ const selectOfferFields = (offer: any, fields: string[]) => {
 };
 
 export const searchFlightsController: RequestHandler = catchAsync(async (req, res) => {
-    console.log('Request body:', req.body);
     const {
         origin,
         destination,
         departureDate,
-        returnDate, // ← destructure করা হচ্ছে
+        returnDate,
         cabinClass,
         limit = 20,
-        maxConnections = 2,
         passengers = [{ type: 'adult' }],
         sort = 'total_amount',
-        fields } = req.body;
+    } = req.body;
 
-    // ── outbound slice সবসময় থাকবে ──
+   
+    const fields = DEFAULT_FIELDS;
+
     const slices: any[] = [
         {
             origin,
@@ -97,7 +94,6 @@ export const searchFlightsController: RequestHandler = catchAsync(async (req, re
         },
     ];
 
-    // ── returnDate থাকলে দ্বিতীয় (return) slice যোগ হবে, origin/destination উল্টে ──
     if (returnDate) {
         slices.push({
             origin: destination,
@@ -109,10 +105,10 @@ export const searchFlightsController: RequestHandler = catchAsync(async (req, re
     }
 
     const response = await duffel.offerRequests.create({
-        slices, // ← এখন dynamic, ১টা বা ২টা slice
+        slices,
         passengers: passengers.map((p: any) => ({ type: p.type })),
         cabin_class: cabinClass,
-        max_connections: maxConnections,  
+        max_connections: 2,
     });
 
     let offers = response.data.offers ?? [];
@@ -137,8 +133,7 @@ export const searchFlightsController: RequestHandler = catchAsync(async (req, re
         success: true,
         message: 'Flight search results retrieved successfully',
         count: slimOffers.length,
-        fields: selectedFields,
-        isRoundTrip: Boolean(returnDate), // ← ডিবাগ/ফ্রন্টএন্ডের সুবিধার জন্য যোগ করলাম
+        isRoundTrip: Boolean(returnDate),
         data: {
             offer_request_id: response.data.id,
             offers: slimOffers,
@@ -146,10 +141,6 @@ export const searchFlightsController: RequestHandler = catchAsync(async (req, re
     });
 });
 
-
- 
-
- 
 
 export const searchPlacesController: RequestHandler = catchAsync(async (req, res) => {
     const { query } = req.query;
@@ -163,9 +154,9 @@ export const searchPlacesController: RequestHandler = catchAsync(async (req, res
         });
     }
 
-     
+
     const response = await duffel.suggestions.list({ query: String(query) });
-    
+
     const places = response.data.map((place: any) => ({
         id: place.id,
         type: place.type,
@@ -186,8 +177,170 @@ export const searchPlacesController: RequestHandler = catchAsync(async (req, res
         data: places,
     });
 });
- 
- 
 
- 
- 
+
+export const paymentCheckOutSessionController: RequestHandler = catchAsync(async (req, res) => {
+
+    const result = await createCheckoutSessionService(req?.body)
+
+    res.status(status.OK).json({
+        status: status.OK,
+        success: true,
+        message: "Checkout session created successfully",
+        data: result,
+    });
+});
+
+
+export const verifyPaymentAndBookFlight: RequestHandler = catchAsync(async (req, res, next) => {
+    const { sessionId, offerId, passengers, contactEmail, contactPhone, flightSummary } = req.body;
+
+    if (!sessionId || !offerId) {
+        throw new Error('sessionId and offerId are required.');
+    }
+
+    if (!Array.isArray(passengers) || passengers.length === 0) {
+        return res.status(status.BAD_REQUEST).json({
+            status: status.BAD_REQUEST,
+            success: false,
+            message: 'passengers array is required and cannot be empty.',
+        });
+    }
+
+    const missingIdIndex = passengers.findIndex((p: any) => !p.duffelPassengerId);
+    if (missingIdIndex !== -1) {
+        return res.status(status.BAD_REQUEST).json({
+            status: status.BAD_REQUEST,
+            success: false,
+            message: `Passenger at index ${missingIdIndex} is missing duffelPassengerId.`,
+        });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    //checking payment status
+    if (session.payment_status !== 'paid') {
+        return res.status(status.PAYMENT_REQUIRED).json({
+            status: status.PAYMENT_REQUIRED,
+            success: false,
+            message: 'Payment not completed for this session.',
+            paymentStatus: session.payment_status,
+        });
+    }
+
+    //creating a flight booking
+    let duffelOrder;
+    try {
+        duffelOrder = await duffel.orders.create({
+            type: 'instant',
+            selected_offers: [offerId],
+            passengers: passengers.map((p: any) => ({
+                id: p.duffelPassengerId,
+                title: p.title,
+                given_name: p.givenName,
+                family_name: p.familyName,
+                gender: p.gender,
+                born_on: p.bornOn,
+                email: contactEmail,
+                phone_number: contactPhone,
+            })),
+            payments: [
+                {
+                    type: 'balance',
+                    currency: session.currency?.toUpperCase() ?? 'USD',
+                    amount: String((session.amount_total ?? 0) / 100),
+                },
+            ],
+        });
+    } catch (err: any) {
+        console.error('Message:', err?.message);
+        let refundSucceeded = false;
+        try {
+            if (session.payment_intent) {
+                await stripe.refunds.create({ payment_intent: session.payment_intent as string });
+                refundSucceeded = true;
+            }
+        } catch (refundErr: any) {
+            console.error('CRITICAL: refund also failed:', refundErr.message);
+        }
+
+        
+        await flightBookingModel.create({
+            stripeSessionId: sessionId,
+            paymentIntentId: session.payment_intent as string,
+            offerId,
+            amountPaid: (session.amount_total ?? 0) / 100,
+            currency: session.currency,
+            passengers,
+            contactEmail,
+            contactPhone,
+            flightSummary,
+            status: 'payment_succeeded_booking_failed',
+            errorMessage: `${err?.message ?? 'Unknown Duffel error'}${refundSucceeded ? ' (refunded)' : ' (REFUND FAILED - manual action needed)'}`,
+        });
+
+        return res.status(status.INTERNAL_SERVER_ERROR).json({
+            status: status.INTERNAL_SERVER_ERROR,
+            success: false,
+            message: 'Failed to confirm your flight booking. Your payment has been refunded.',
+            ...(envData.mode !== 'production' && {
+                debug: err?.response?.data ?? err?.errors ?? err?.message,
+            }),
+        });
+    }
+
+    await stripe.checkout.sessions.update(sessionId, {
+        metadata: {
+            ...session.metadata,
+            duffelOrderId: duffelOrder.data.id,
+            bookingReference: duffelOrder.data.booking_reference ?? '',
+        },
+    });
+
+     
+    await flightBookingModel.create({
+        stripeSessionId: sessionId,
+        paymentIntentId: session.payment_intent as string,
+        offerId,
+        duffelOrderId: duffelOrder.data.id,
+        bookingReference: duffelOrder.data.booking_reference ?? '',
+        amountPaid: (session.amount_total ?? 0) / 100,
+        currency: session.currency,
+        passengers,
+        contactEmail,
+        contactPhone,
+        flightSummary,
+        status: 'confirmed',
+        duffelOrderRaw: duffelOrder.data,
+    });
+
+    res.status(status.OK).json({
+        status: status.OK,
+        success: true,
+        message: 'Booking confirmed',
+        data: {
+            duffelOrder: duffelOrder.data,
+            duffelOrderId: duffelOrder.data.id,
+            bookingReference: duffelOrder.data.booking_reference,
+            amountPaid: (session.amount_total ?? 0) / 100,
+            currency: session.currency,
+            flightSummary,
+            passengers,
+            contactEmail,
+        },
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
