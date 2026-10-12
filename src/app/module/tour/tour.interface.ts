@@ -1,11 +1,9 @@
-export type TPackageStatus =
-    | "draft"
-    | "open"
-    | "minimum_reached"
-    | "confirmed"
-    | "full"
-    | "cancelled"
+export type TPackageStatus = "draft"| "open"| "minimum_reached"| "confirmed"| "full"| "cancelled"
     | "completed";
+
+
+
+export type TtourCategory =| 'arctic'| 'beach'| 'adventure'| 'heritage'| 'honeymoon'| 'wildlife'| 'city'| 'hill_trek'| 'luxury'| 'family';
 
 export interface TPackageImage {
     url: string;
@@ -56,6 +54,7 @@ export interface TTourPackage {
         days: number;
         nights: number;
     };
+    categories: TtourCategory[];
     departureDate: Date;
     returnDate: Date;
     itinerary: TItinerary[];
@@ -67,3 +66,4 @@ export interface TTourPackage {
     suppliers: TPackageSuppliers;
     costing: TPackageCosting;
 }
+

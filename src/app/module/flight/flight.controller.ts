@@ -3,9 +3,11 @@ import envData from "../../config";
 import { catchAsync } from "../../helper/catchAsync";
 import { RequestHandler } from "express";
 import status from "http-status";
-import { createCheckoutSessionService } from "./flight.services";
+ 
 import Stripe from "stripe";
 import { flightBookingModel } from "../bookingFlight/booking.model";
+import { createCheckoutSessionService } from "../payment/payment.services";
+ 
 
 
 
@@ -13,7 +15,6 @@ const duffel = new Duffel({ token: envData.duffle_accessToken });
 const stripe = new Stripe(envData.stripe_secret_key as string);
 
 const DEFAULT_FIELDS = ['id', 'price', 'airline', 'duration', 'stops', 'segments', 'passengers'];
-
 
 
 
@@ -179,17 +180,7 @@ export const searchPlacesController: RequestHandler = catchAsync(async (req, res
 });
 
 
-export const paymentCheckOutSessionController: RequestHandler = catchAsync(async (req, res) => {
-
-    const result = await createCheckoutSessionService(req?.body)
-
-    res.status(status.OK).json({
-        status: status.OK,
-        success: true,
-        message: "Checkout session created successfully",
-        data: result,
-    });
-});
+ 
 
 
 export const verifyPaymentAndBookFlight: RequestHandler = catchAsync(async (req, res, next) => {
@@ -217,7 +208,6 @@ export const verifyPaymentAndBookFlight: RequestHandler = catchAsync(async (req,
     }
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-
     //checking payment status
     if (session.payment_status !== 'paid') {
         return res.status(status.PAYMENT_REQUIRED).json({
@@ -266,6 +256,7 @@ export const verifyPaymentAndBookFlight: RequestHandler = catchAsync(async (req,
 
         
         await flightBookingModel.create({
+            userId:req?.user?._id,
             stripeSessionId: sessionId,
             paymentIntentId: session.payment_intent as string,
             offerId,
@@ -299,6 +290,7 @@ export const verifyPaymentAndBookFlight: RequestHandler = catchAsync(async (req,
 
      
     await flightBookingModel.create({
+        userId: req?.user?._id,
         stripeSessionId: sessionId,
         paymentIntentId: session.payment_intent as string,
         offerId,

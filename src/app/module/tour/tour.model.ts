@@ -67,7 +67,7 @@ const PackageCostingSchema = new Schema<TPackageCosting>(
     },
     { _id: false }
 );
-
+const category = ['arctic','beach','adventure','heritage','honeymoon','wildlife','city','hill_trek','luxury','family',]
 const TourPackageSchema = new Schema<TTourPackageDocument>(
     {
         title: { type: String, required: true, trim: true },
@@ -78,6 +78,7 @@ const TourPackageSchema = new Schema<TTourPackageDocument>(
             days: { type: Number, required: true, min: 1 },
             nights: { type: Number, required: true, min: 0 },
         },
+        categories: {type: [String], enum: category, default: [], index: true},
         departureDate: { type: Date, required: true, index: true },
         returnDate: { type: Date, required: true },
         itinerary: { type: [ItinerarySchema], default: [] },

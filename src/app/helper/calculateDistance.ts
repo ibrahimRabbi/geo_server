@@ -9,8 +9,9 @@ export function calculateDistanceInKm(lat1: number, lon1: number, lat2: number, 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
     
-    return Math.round(distance * 100) / 100;  
+    return Math.round(distance * 100) / 100;
 
-function toRadians(degrees: number): number {
-    return degrees * (Math.PI / 180);
+    function toRadians(degrees: number): number {
+        return degrees * (Math.PI / 180);
+    }
 }
